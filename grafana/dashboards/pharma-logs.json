@@ -1,25 +1,51 @@
 {
   "id": null,
-  "uid": "pharma-logs",
-  "title": "Pharma Logs Monitoring",
-  "tags": ["loki", "logs", "spring-boot"],
+  "uid": "pharma-logs-v4",
+  "title": "Pharma Logs",
+  "tags": ["loki", "logs"],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 4,
   "refresh": "5s",
+
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "Loki" },
+        "query": "label_values(service)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true
+      },
+      {
+        "name": "level",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "Loki" },
+        "query": "label_values(level)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true
+      },
+      {
+        "name": "search",
+        "type": "textbox",
+        "query": "",
+        "current": { "text": "", "value": "" }
+      }
+    ]
+  },
+
   "panels": [
 
     {
       "type": "timeseries",
-      "title": "Error Rate (logs)",
-      "id": 1,
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
+      "title": "Error Rate",
+      "datasource": { "type": "loki", "uid": "Loki" },
       "targets": [
         {
-          "expr": "sum(rate({job=\"docker-logs\"} |= \"ERROR\" [1m]))",
+          "expr": "sum(rate({job=\"file-logs\", service=~\"$service\", level=\"ERROR\"}[1m]))",
           "refId": "A"
         }
       ],
@@ -29,14 +55,10 @@
     {
       "type": "timeseries",
       "title": "Log Volume",
-      "id": 2,
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
+      "datasource": { "type": "loki", "uid": "Loki" },
       "targets": [
         {
-          "expr": "sum(rate({job=\"docker-logs\"}[1m]))",
+          "expr": "sum(rate({job=\"file-logs\", service=~\"$service\"}[1m]))",
           "refId": "A"
         }
       ],
@@ -44,108 +66,75 @@
     },
 
     {
-      "type": "logs",
-      "title": "Error Logs (Live)",
-      "id": 3,
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
+      "type": "timeseries",
+      "title": "Logs by Level",
+      "datasource": { "type": "loki", "uid": "Loki" },
       "targets": [
         {
-          "expr": "{job=\"docker-logs\"} |= \"ERROR\"",
+          "expr": "sum by (level) (rate({job=\"file-logs\", service=~\"$service\"}[1m]))",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 }
+    },
+
+    {
+      "type": "logs",
+      "title": "Live Logs",
+      "datasource": { "type": "loki", "uid": "Loki" },
+      "targets": [
+        {
+          "expr": "{job=\"file-logs\", service=~\"$service\", level=~\"$level\"} |= \"$search\"",
           "refId": "A"
         }
       ],
       "options": {
         "showTime": true,
-        "wrapLogMessage": true,
-        "dedupStrategy": "none"
+        "wrapLogMessage": true
       },
-      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 10 }
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 10 }
     },
 
     {
       "type": "logs",
       "title": "500 Errors",
-      "id": 4,
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
+      "datasource": { "type": "loki", "uid": "Loki" },
       "targets": [
         {
-          "expr": "{job=\"docker-logs\"} |= \"500\"",
+          "expr": "{job=\"file-logs\", service=~\"$service\"} |= \" 500 \"",
           "refId": "A"
         }
       ],
-      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 10 }
+      "gridPos": { "x": 0, "y": 26, "w": 12, "h": 10 }
     },
 
     {
       "type": "logs",
-      "title": "Exceptions / Stacktrace",
-      "id": 5,
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
+      "title": "Exceptions",
+      "datasource": { "type": "loki", "uid": "Loki" },
       "targets": [
         {
-          "expr": "{job=\"docker-logs\"} |= \"Exception\"",
+          "expr": "{job=\"file-logs\", service=~\"$service\"} |= \"Exception\"",
           "refId": "A"
         }
       ],
-      "gridPos": { "x": 12, "y": 18, "w": 12, "h": 10 }
+      "gridPos": { "x": 12, "y": 26, "w": 12, "h": 10 }
     },
 
     {
-      "type": "logs",
-      "title": "Search Logs",
-      "id": 6,
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
+      "type": "timeseries",
+      "title": "Errors by Service",
+      "datasource": { "type": "loki", "uid": "Loki" },
       "targets": [
         {
-          "expr": "{job=\"docker-logs\"} |= \"$search\"",
+          "expr": "sum by (service) (rate({job=\"file-logs\", level=\"ERROR\"}[1m]))",
           "refId": "A"
         }
       ],
-      "gridPos": { "x": 0, "y": 28, "w": 24, "h": 10 }
+      "gridPos": { "x": 0, "y": 36, "w": 24, "h": 8 }
     }
 
   ],
-
-  "templating": {
-    "list": [
-
-      {
-        "name": "container",
-        "type": "query",
-        "datasource": {
-          "type": "loki",
-          "uid": "Loki"
-        },
-        "query": "label_values(container_name)",
-        "refresh": 2,
-        "multi": true,
-        "includeAll": true
-      },
-
-      {
-        "name": "search",
-        "type": "textbox",
-        "query": "",
-        "current": {
-          "text": "",
-          "value": ""
-        }
-      }
-
-    ]
-  },
 
   "time": {
     "from": "now-15m",
