@@ -14,7 +14,6 @@ target: all
 
 querier:
   max_concurrent: 20
-  query_timeout: 5m
   tail_max_duration: 1h
   extra_query_delay: 0s
   query_ingesters_within: 3h
@@ -32,9 +31,16 @@ query_scheduler:
 
 frontend:
   scheduler_address: ""
+  # Monolithic mode: bind frontend on loopback only
+  address: 127.0.0.1:9095
 
 frontend_worker:
   scheduler_address: ""
+  # Connect directly to the in-process frontend, skip scheduler
+  frontend_address: 127.0.0.1:9095
+  grpc_client_config:
+    max_recv_msg_size: 104857600
+    max_send_msg_size: 104857600
 
 common:
   path_prefix: /loki
@@ -72,7 +78,7 @@ ingester_client:
     max_send_msg_size: 104857600
   remote_timeout: 5s
 
-# FIX 1: schema v13 requires 'tsdb', not 'boltdb-shipper'
+# ✅ FIX 1: schema v13 requires 'tsdb', not 'boltdb-shipper'
 schema_config:
   configs:
     - from: 2024-01-01
@@ -83,7 +89,7 @@ schema_config:
         prefix: index_
         period: 24h
 
-# FIX 2: use tsdb_shipper to match schema store
+# ✅ FIX 2: use tsdb_shipper to match schema store
 storage_config:
   tsdb_shipper:
     active_index_directory: /loki/index
@@ -93,6 +99,7 @@ storage_config:
     directory: /loki/chunks
 
 limits_config:
+  query_timeout: 5m
   ingestion_rate_mb: 32
   ingestion_burst_size_mb: 64
   per_stream_rate_limit: 10MB
