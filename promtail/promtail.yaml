@@ -7,11 +7,14 @@ positions:
 clients:
   - url: http://loki:3100/loki/api/v1/push
     batchwait: 1s
-    batchsize: 524288    # 512KB per batch instead of dumping 1MB at once
+    batchsize: 102400    # 100KB per batch to reduce pressure on Loki
+    timeout: 30s
     backoff_config:
       min_period: 500ms
       max_period: 5m
       max_retries: 10
+    external_labels: {}
+    tenant_id: ""
 
 scrape_configs:
 
