@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # ========================
+  # Prometheus - Metrics
+  # ========================
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - ":9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    networks:
+      - traefik-public
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================
+  # Loki - Logs Storage
+  # ========================
+  loki:
+    image: grafana/loki:2.9.0
+    ports:
+      - ":3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+    networks:
+      - traefik-public
+
+  # ========================
+  # Promtail - Log Collector
+  # ========================
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      - ./promtail/promtail.yaml:/etc/promtail/promtail.yaml
+      - /mnt/log:/var/log
+      # 👇 VERY IMPORTANT (for docker logs)
+      #- /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/promtail.yaml
+    networks:
+      - traefik-public
+    depends_on:
+      - loki
+
+  # ========================
+  # Grafana - Visualization
+  # ========================
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: Deep@Fathom2001
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - traefik-public
+    depends_on:
+      - prometheus
+      - loki
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+networks:
+  traefik-public:
+    external: true
+#    driver: bridge

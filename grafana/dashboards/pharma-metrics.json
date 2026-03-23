@@ -1,0 +1,186 @@
+{
+  "title": "SERVICE STATUS",
+  "schemaVersion": 42,
+  "version": 5,
+  "refresh": "10s",
+
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(http_server_requests_seconds_count, application)",
+        "multi": true,
+        "includeAll": true,
+        "refresh": 1
+      },
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(http_server_requests_seconds_count{application=~\"$service\"}, instance)",
+        "multi": true,
+        "includeAll": true,
+        "refresh": 1
+      }
+    ]
+  },
+
+  "panels": [
+
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Request Rate (RPS)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{application=~\"$service\", instance=~\"$instance\"}[1m]))"
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "🔥 Error % (5xx)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": {
+        "defaults": { "unit": "percent" }
+      },
+      "targets": [
+        {
+          "expr": "(sum(rate(http_server_requests_seconds_count{status=~\"5..\", application=~\"$service\", instance=~\"$instance\"}[1m])) / sum(rate(http_server_requests_seconds_count{application=~\"$service\", instance=~\"$instance\"}[1m]))) * 100"
+        }
+      ]
+    },
+
+    {
+      "id": 20,
+      "type": "table",
+      "title": "🔥 Top 500 Error URLs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 32 },
+      "targets": [
+        {
+          "expr": "topk(20, sum(rate(http_server_requests_seconds_count{status=~\"5..\", application=~\"$service\", instance=~\"$instance\", uri!=\"/actuator/prometheus\"}[5m])) by (uri, method))",
+          "format": "table",
+          "legendFormat": "{{method}} {{uri}}"
+        }
+      ]
+    },
+
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "DB Connections (Hikari)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active{application=~\"$service\", instance=~\"$instance\"}",
+          "legendFormat": "active"
+        },
+        {
+          "expr": "hikaricp_connections_idle{application=~\"$service\", instance=~\"$instance\"}",
+          "legendFormat": "idle"
+        },
+        {
+          "expr": "hikaricp_connections_pending{application=~\"$service\", instance=~\"$instance\"}",
+          "legendFormat": "pending"
+        }
+      ]
+    },
+
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "DB Pool Usage %",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": {
+        "defaults": { "unit": "percent" }
+      },
+      "targets": [
+        {
+          "expr": "(hikaricp_connections_active{application=~\"$service\", instance=~\"$instance\"} / hikaricp_connections_max{application=~\"$service\", instance=~\"$instance\"}) * 100",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Redis Commands Latency",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "fieldConfig": {
+        "defaults": { "unit": "s" }
+      },
+      "targets": [
+        {
+          "expr": "rate(redis_commands_duration_seconds_sum{application=~\"$service\", instance=~\"$instance\"}[1m]) / rate(redis_commands_duration_seconds_count{application=~\"$service\", instance=~\"$instance\"}[1m])",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Redis Hit Ratio %",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "fieldConfig": {
+        "defaults": { "unit": "percent" }
+      },
+      "targets": [
+        {
+          "expr": "(rate(redis_cache_hits_total{application=~\"$service\", instance=~\"$instance\"}[1m]) / (rate(redis_cache_hits_total{application=~\"$service\", instance=~\"$instance\"}[1m]) + rate(redis_cache_misses_total{application=~\"$service\", instance=~\"$instance\"}[1m]))) * 100",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Heap Memory %",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "fieldConfig": {
+        "defaults": { "unit": "percent" }
+      },
+      "targets": [
+        {
+          "expr": "(jvm_memory_used_bytes{area=\"heap\", application=~\"$service\", instance=~\"$instance\"} / jvm_memory_max_bytes{area=\"heap\", application=~\"$service\", instance=~\"$instance\"}) * 100"
+        }
+      ]
+    },
+
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "GC Rate",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "targets": [
+        {
+          "expr": "rate(jvm_gc_pause_seconds_count{application=~\"$service\", instance=~\"$instance\"}[1m])"
+        }
+      ]
+    },
+
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Threads",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "targets": [
+        {
+          "expr": "jvm_threads_live_threads{application=~\"$service\", instance=~\"$instance\"}"
+        }
+      ]
+    }
+  ],
+
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  }
+}
