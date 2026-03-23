@@ -12,6 +12,16 @@ server:
 
 target: all                          # 👈 explicit single-binary mode
 
+querier:
+  max_concurrent: 4
+  query_timeout: 1m
+  tail_max_duration: 1h
+  extra_query_delay: 0s
+  query_ingesters_within: 3h
+  engine:
+    timeout: 5m
+    max_look_back_period: 30s
+
 common:
   path_prefix: /loki
   storage:
@@ -22,17 +32,41 @@ common:
   ring:
     kvstore:
       store: inmemory
+    instance_addr: 127.0.0.1
+    instance_port: 9095
+    instance_id: loki-1
 
-query_scheduler:
-  max_outstanding_requests_per_tenant: 100
-  use_scheduler_ring: false          # 👈 stops ring-based scheduler discovery
+memberlist:
+  join_members: []
+  dead_node_reclaim_time: 30s
+  gossip_to_dead_nodes_time: 0s
+  left_ingesters_timeout: 30s
+  bind_port: 7946
+  advertise_port: 7946
 
-frontend:
-  scheduler_address: ""
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
 
-frontend_worker:
-  scheduler_address: ""
-  match_max_concurrent: true
+ingester_client:
+  grpc_client_config:
+    max_recv_msg_size: 104857600  # 100MB
+    max_send_msg_size: 104857600  # 100MB
+  remote_timeout: 1s
+
+# Query scheduler and frontend worker disabled for single-binary mode
+# querier:
+#   max_concurrent: 4
+
+# frontend:
+#   address: "0.0.0.0"
+#   max_outstanding_per_tenant: 256
+
+# frontend_worker:
+#   frontend_address: "127.0.0.1:9095"
+#   grpc_client_config:
+#     max_send_msg_size: 104857600
 
 schema_config:
   configs:
@@ -73,6 +107,14 @@ ingester:
   chunk_retain_period: 30s
   max_transfer_retries: 0
   concurrent_flushes: 16      # Increase parallelism for flushing
+  lifecycler:
+    address: 127.0.0.1
+    port: 9095
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
   wal:
     enabled: true
     dir: /loki/wal
