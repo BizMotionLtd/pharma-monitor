@@ -1,0 +1,154 @@
+{
+  "id": null,
+  "uid": "pharma-logs",
+  "title": "Pharma Logs Monitoring",
+  "tags": ["loki", "logs", "spring-boot"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "panels": [
+
+    {
+      "type": "timeseries",
+      "title": "Error Rate (logs)",
+      "id": 1,
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({job=\"docker-logs\"} |= \"ERROR\" [1m]))",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Log Volume",
+      "id": 2,
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({job=\"docker-logs\"}[1m]))",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+    },
+
+    {
+      "type": "logs",
+      "title": "Error Logs (Live)",
+      "id": 3,
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "{job=\"docker-logs\"} |= \"ERROR\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "dedupStrategy": "none"
+      },
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 10 }
+    },
+
+    {
+      "type": "logs",
+      "title": "500 Errors",
+      "id": 4,
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "{job=\"docker-logs\"} |= \"500\"",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 10 }
+    },
+
+    {
+      "type": "logs",
+      "title": "Exceptions / Stacktrace",
+      "id": 5,
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "{job=\"docker-logs\"} |= \"Exception\"",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 18, "w": 12, "h": 10 }
+    },
+
+    {
+      "type": "logs",
+      "title": "Search Logs",
+      "id": 6,
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "{job=\"docker-logs\"} |= \"$search\"",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 28, "w": 24, "h": 10 }
+    }
+
+  ],
+
+  "templating": {
+    "list": [
+
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "Loki"
+        },
+        "query": "label_values(container_name)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true
+      },
+
+      {
+        "name": "search",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      }
+
+    ]
+  },
+
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  }
+}
