@@ -2,6 +2,9 @@ auth_enabled: false
 
 server:
   http_listen_port: 3100
+  grpc_listen_port: 9095
+
+target: all                          # 👈 explicit single-binary mode
 
 common:
   path_prefix: /loki
@@ -16,12 +19,14 @@ common:
 
 query_scheduler:
   max_outstanding_requests_per_tenant: 100
+  use_scheduler_ring: false          # 👈 stops ring-based scheduler discovery
 
 frontend:
   scheduler_address: ""
 
 frontend_worker:
   scheduler_address: ""
+  match_max_concurrent: true
 
 schema_config:
   configs:
@@ -51,4 +56,4 @@ chunk_store_config:
 
 table_manager:
   retention_deletes_enabled: true
-  retention_period: 168h  # 7 days
+  retention_period: 168h
