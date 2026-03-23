@@ -106,7 +106,6 @@ limits_config:
   max_label_names_per_series: 30
   max_cache_freshness_per_query: 10m
   split_queries_by_interval: 1h
-  max_outstanding_per_tenant: 2048
 
 ingester:
   chunk_idle_period: 30m      # Reduced from 1h for faster flushing
