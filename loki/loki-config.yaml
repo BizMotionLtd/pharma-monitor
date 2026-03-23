@@ -3,6 +3,10 @@ auth_enabled: false
 server:
   http_listen_port: 3100
   grpc_listen_port: 9095
+  http_server_read_timeout: 600s
+  http_server_write_timeout: 600s
+  grpc_server_max_recv_msg_size: 104857600  # 100MB
+  grpc_server_max_send_msg_size: 104857600  # 100MB
 
 target: all                          # 👈 explicit single-binary mode
 
@@ -63,16 +67,6 @@ ingester:
   chunk_target_size: 1536000
   chunk_retain_period: 30s
   max_transfer_retries: 0
-  lifecycler:
-    ring:
-      kvstore:
-        store: inmemory
-      replication_factor: 1
-    num_tokens: 128
-    heartbeat_period: 5s
-    join_after: 30s
-    observe_period: 30s
-    final_sleep: 0s
   wal:
     enabled: true
     dir: /loki/wal
