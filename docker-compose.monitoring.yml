@@ -4,12 +4,12 @@ services:
   # ========================
   # Prometheus - Metrics
   # ========================
-  prometheus:
+  apexp-prometheus:
     image: prom/prometheus:latest
     ports:
       - ":9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /mnt/apexp/pharma-monitor/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -26,14 +26,14 @@ services:
   # ========================
   # Loki - Logs Storage
   # ========================
-  loki:
+  apexp-loki:
     image: grafana/loki:2.9.0
     ports:
       - ":3100"
     command:
       - -config.file=/etc/loki/loki-config.yaml
     volumes:
-      - ./loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - /mnt/apexp/pharma-monitor/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
       - loki_data:/loki
     networks:
       - traefik-public
@@ -53,11 +53,11 @@ services:
   # ========================
   # Promtail - Log Collector
   # ========================
-  promtail:
+  apexp-promtail:
     image: grafana/promtail:2.9.0
     volumes:
-      - ./promtail/promtail.yaml:/etc/promtail/promtail.yaml
-      - /mnt/log:/var/log
+      - /mnt/apexp/pharma-monitor/promtail/promtail.yaml:/etc/promtail/promtail.yaml
+      - /mnt/apexp/logs:/var/log
       # 👇 VERY IMPORTANT (for docker logs)
       #- /var/lib/docker/containers:/var/lib/docker/containers:ro
     command: -config.file=/etc/promtail/promtail.yaml
@@ -75,28 +75,36 @@ services:
   # ========================
   # Grafana - Visualization
   # ========================
-  grafana:
+  apexp-grafana:
     image: grafana/grafana:latest
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: Deep@Fathom2001
       GF_INSTALL_PLUGINS: grafana-piechart-panel
     ports:
-      - "3000:3000"
+      - ":3000"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources
-      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - /mnt/apexp/pharma-monitor/grafana/datasources:/etc/grafana/provisioning/datasources
+      - /mnt/apexp/pharma-monitor/grafana/dashboards:/etc/grafana/provisioning/dashboards
     networks:
       - traefik-public
     depends_on:
-      - prometheus
-      - loki
+      - apexp-prometheus
+      - apexp-loki
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - traefik.http.routers.apexp-grafana.rule=Host(`monitor.apexp.bizmotionapp.com`)
+        - "traefik.http.services.apexp-grafana.loadbalancer.server.port=3000"
+        - "traefik.http.routers.apexp-grafana.entrypoints=web,websecure"
+        - "traefik.http.routers.apexp-grafana.tls=true"
+        - "traefik.http.routers.apexp-grafana.tls.certresolver=leresolver"
 
 volumes:
   prometheus_data:
