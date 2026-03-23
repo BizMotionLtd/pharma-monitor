@@ -5,7 +5,7 @@ positions:
   filename: /tmp/positions.yaml
 
 clients:
-  - url: http://loki:3100/loki/api/v1/push
+  - url: http://apexp-loki:3100/loki/api/v1/push
     batchwait: 1s
     batchsize: 524288    # 512KB per batch instead of dumping 1MB at once
     backoff_config:
