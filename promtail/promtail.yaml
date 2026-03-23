@@ -6,11 +6,11 @@ positions:
 
 clients:
   - url: http://apexp-loki:3100/loki/api/v1/push
-    batchwait: 1s
-    batchsize: 102400    # 100KB per batch to reduce pressure on Loki
-    timeout: 30s
+    batchwait: 500ms     # Send more frequently
+    batchsize: 51200     # 50KB per batch to reduce pressure on Loki
+    timeout: 60s         # Increase timeout to handle spikes
     backoff_config:
-      min_period: 500ms
+      min_period: 1s
       max_period: 5m
       max_retries: 10
     external_labels: {}
