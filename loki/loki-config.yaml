@@ -27,7 +27,6 @@ query_range:
   cache_results: false
   parallelise_shardable_queries: false
 
-# Explicitly disable query scheduler and frontend
 query_scheduler:
   max_outstanding_requests_per_tenant: 2048
 
@@ -73,20 +72,23 @@ ingester_client:
     max_send_msg_size: 104857600
   remote_timeout: 5s
 
+# FIX 1: schema v13 requires 'tsdb', not 'boltdb-shipper'
 schema_config:
   configs:
     - from: 2024-01-01
-      store: boltdb-shipper
+      store: tsdb
       object_store: filesystem
       schema: v13
       index:
         prefix: index_
         period: 24h
 
+# FIX 2: use tsdb_shipper to match schema store
 storage_config:
-  boltdb_shipper:
+  tsdb_shipper:
     active_index_directory: /loki/index
     cache_location: /loki/cache
+    cache_ttl: 24h
   filesystem:
     directory: /loki/chunks
 
@@ -108,12 +110,12 @@ limits_config:
   split_queries_by_interval: 1h
 
 ingester:
-  chunk_idle_period: 30m      # Reduced from 1h for faster flushing
-  max_chunk_age: 1h           # Reduced from 2h
+  chunk_idle_period: 30m
+  max_chunk_age: 1h
   chunk_target_size: 1536000
   chunk_retain_period: 30s
   max_transfer_retries: 0
-  concurrent_flushes: 16      # Increase parallelism for flushing
+  concurrent_flushes: 16
   lifecycler:
     address: 127.0.0.1
     port: 9095
@@ -129,8 +131,9 @@ ingester:
     flush_on_shutdown: true
     replay_memory_ceiling: 1GB
 
+# ✅ FIX 3: match retention period so old data isn't blocked from queries
 chunk_store_config:
-  max_look_back_period: 0s
+  max_look_back_period: 168h
 
 table_manager:
   retention_deletes_enabled: true
