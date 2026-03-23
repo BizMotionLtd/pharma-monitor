@@ -33,6 +33,12 @@ scrape_configs:
   # Spring Boot file logs
   # ========================
   - job_name: file-logs
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<time>[^|]+) \| (?P<level>[^|]+) \| \[(?P<service>[^\]]+)\] \| (?P<msg>.*)'
+      - labels:
+          level:
+          service:
     static_configs:
       - targets:
           - localhost
