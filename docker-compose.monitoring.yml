@@ -70,8 +70,7 @@ services:
     networks:
       - traefik-public
     depends_on:
-      apexp-loki:
-        condition: service_healthy
+      - apexp-loki
     deploy:
       resources:
         limits:
