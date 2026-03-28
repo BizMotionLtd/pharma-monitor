@@ -4,12 +4,12 @@ services:
   # ========================
   # Prometheus - Metrics
   # ========================
-  prometheus:
+  p2-prometheus:
     image: prom/prometheus:latest
     ports:
       - ":9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /mnt/pharma2/pharma-monitor/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -26,7 +26,7 @@ services:
   # ========================
   # Loki - Logs Storage
   # ========================
-  loki:
+  p2-loki:
     image: grafana/loki:2.9.0
     ports:
       - ":3100"
@@ -35,7 +35,7 @@ services:
       - -target=all
       - -log.level=info
     volumes:
-      - ./loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - /mnt/pharma2/pharma-monitor/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
       - loki_data:/loki
     networks:
       - traefik-public
@@ -59,18 +59,18 @@ services:
   # ========================
   # Promtail - Log Collector
   # ========================
-  promtail:
+  p2-promtail:
     image: grafana/promtail:2.9.0
     volumes:
-      - ./promtail/promtail.yaml:/etc/promtail/promtail.yaml
-      - /mnt/apexp/logs:/var/log
+      - /mnt/pharma2/pharma-monitor/promtail/promtail.yaml:/etc/promtail/promtail.yaml
+      - /mnt/pharma2/logs:/var/log
       # 👇 VERY IMPORTANT (for docker logs)
       #- /var/lib/docker/containers:/var/lib/docker/containers:ro
     command: -config.file=/etc/promtail/promtail.yaml
     networks:
       - traefik-public
     depends_on:
-      - loki
+      - p2-loki
     deploy:
       resources:
         limits:
@@ -81,7 +81,7 @@ services:
   # ========================
   # Grafana - Visualization
   # ========================
-  grafana:
+  p2-grafana:
     image: grafana/grafana:latest
     environment:
       GF_SECURITY_ADMIN_USER: admin
@@ -91,13 +91,13 @@ services:
       - ":3000"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources
-      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - /mnt/pharma2/pharma-monitor/grafana/datasources:/etc/grafana/provisioning/datasources
+      - /mnt/pharma2/pharma-monitor/grafana/dashboards:/etc/grafana/provisioning/dashboards
     networks:
       - traefik-public
     depends_on:
-      - prometheus
-      - loki
+      - p2-prometheus
+      - p2-loki
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
       interval: 30s

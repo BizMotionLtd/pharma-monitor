@@ -4,5 +4,5 @@ datasources:
   - name: Loki
     type: loki
     access: proxy
-    url: http://apexp-loki:3100
+    url: http://p2-loki:3100
     isDefault: false

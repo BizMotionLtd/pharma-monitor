@@ -5,7 +5,7 @@ positions:
   filename: /tmp/positions.yaml
 
 clients:
-  - url: http://apexp-loki:3100/loki/api/v1/push
+  - url: http://p2-loki:3100/loki/api/v1/push
     batchwait: 500ms     # Send more frequently
     batchsize: 51200     # 50KB per batch to reduce pressure on Loki
     timeout: 60s         # Increase timeout to handle spikes
